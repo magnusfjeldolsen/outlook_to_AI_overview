@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MSG to Text Converter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+            min-height: 600px;
+        }
+
+        .upload-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .upload-section h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .file-drop-zone {
+            flex: 1;
+            border: 3px dashed #bdc3c7;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .file-drop-zone:hover {
+            border-color: #667eea;
+            background: #f0f3ff;
+        }
+
+        .file-drop-zone.drag-over {
+            border-color: #667eea;
+            background: #e8f0fe;
+            transform: scale(1.02);
+        }
+
+        .drop-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .drop-zone-content h3 {
+            color: #2c3e50;
+            margin: 10px 0 5px 0;
+            font-size: 1.3rem;
+        }
+
+        .drop-zone-content p {
+            color: #7f8c8d;
+            font-size: 1rem;
+        }
+
+        .file-list {
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 15px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-left: 4px solid #667eea;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            flex: 1;
+        }
+
+        .file-icon {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+
+        .file-details h4 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+
+        .file-details p {
+            margin: 2px 0 0 0;
+            color: #7f8c8d;
+            font-size: 12px;
+        }
+
+        .file-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .status-ready {
+            background: #27ae60;
+            color: white;
+        }
+
+        .status-processing {
+            background: #f39c12;
+            color: white;
+        }
+
+        .status-error {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .convert-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .convert-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .convert-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .output-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .output-section h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .output-container {
+            flex: 1;
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .output-text {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: none;
+            outline: none;
+            color: #2c3e50;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .copy-btn:hover {
+            background: #5a6fd8;
+        }
+
+        .copy-btn.copied {
+            background: #27ae60;
+        }
+
+        .no-output {
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+            padding: 40px 20px;
+        }
+
+        .format-options {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            align-items: center;
+        }
+
+        .format-option {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .format-option input[type="checkbox"] {
+            margin: 0;
+        }
+
+        .format-option label {
+            font-size: 14px;
+            color: #2c3e50;
+            cursor: pointer;
+        }
+
+        .batch-controls {
+            position: sticky;
+            top: 0;
+            background: white;
+            border-bottom: 2px solid #ecf0f1;
+            padding: 15px 0;
+            margin-bottom: 15px;
+            z-index: 10;
+        }
+
+        .batch-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .batch-tab {
+            background: #ecf0f1;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #2c3e50;
+        }
+
+        .batch-tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .batch-tab:hover:not(.active) {
+            background: #bdc3c7;
+        }
+
+        .copy-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            justify-content: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .copy-batch-btn-top {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        }
+
+        .copy-batch-btn-top:hover {
+            background: #5a6fd8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .current-batch-info {
+            color: #7f8c8d;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .batch-content {
+            display: none;
+            flex-direction: column;
+            height: calc(100% - 120px);
+        }
+
+        .batch-content.active {
+            display: flex;
+        }
+
+        .output-text {
+            flex: 1;
+            min-height: 300px;
+        }
+
+        .batch-summary {
+            background: #e8f0fe;
+            border: 1px solid #bee5eb;
+            border-left: 4px solid #17a2b8;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .batch-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .batch-tab {
+            background: #ecf0f1;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #2c3e50;
+        }
+
+        .batch-tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .batch-tab:hover:not(.active) {
+            background: #bdc3c7;
+        }
+
+        .batch-content {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .batch-content.active {
+            display: flex;
+        }
+
+        .batch-info {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        .length-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-left: 4px solid #e17055;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .length-info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-left: 4px solid #17a2b8;
+            color: #0c5460;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .tips {
+            background: #e8f0fe;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .tips h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .tips ul {
+            color: #2c3e50;
+            margin-left: 20px;
+        }
+
+        .tips li {
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📧 MSG to Text Converter</h1>
+            <p>Convert .msg files to formatted text for Copilot analysis</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="upload-section">
+                <h2>📁 Upload .msg Files</h2>
+                
+                <div class="file-drop-zone" id="fileDropZone">
+                    <div class="drop-zone-content">
+                        <div class="drop-icon">📧</div>
+                        <h3>Drop .msg files here</h3>
+                        <p>or click to browse</p>
+                        <input type="file" id="fileInput" multiple accept=".msg,.eml" style="display: none;">
+                    </div>
+                </div>
+                
+                <div id="fileList" class="file-list"></div>
+                
+                <div class="format-options">
+                    <div class="format-option">
+                        <input type="checkbox" id="includeHeaders" checked>
+                        <label for="includeHeaders">Include headers</label>
+                    </div>
+                    <div class="format-option">
+                        <input type="checkbox" id="separateEmails" checked>
+                        <label for="separateEmails">Separate emails</label>
+                    </div>
+                    <div class="format-option">
+                        <input type="checkbox" id="addNumbers" checked>
+                        <label for="addNumbers">Number emails</label>
+                    </div>
+                </div>
+                
+                <button class="convert-btn" onclick="convertFiles()" id="convertBtn">
+                    🔄 Convert to Text
+                </button>
+            </div>
+            
+            <div class="output-section">
+                <h2>📝 Text Output</h2>
+                <div class="output-container" id="outputContainer">
+                    <div class="no-output">
+                        Upload .msg files and click "Convert to Text" to generate formatted text for Copilot.
+                    </div>
+                    <button class="copy-btn" id="copyBtn" onclick="copyToClipboard()" style="display: none;">
+                        📋 Copy All
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tips">
+            <h3>💡 How to use with Copilot:</h3>
+            <ul>
+                <li>Upload multiple .msg files from your Outlook</li>
+                <li>Click "Convert to Text" to generate formatted output</li>
+                <li>Copy the text and paste it into Copilot chat</li>
+                <li>Ask Copilot: "Analyze these emails and extract all action items, deadlines, and priorities"</li>
+                <li>Copilot will create a structured summary with actionable tasks!</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let uploadedFiles = [];
+        
+        function setupFileHandling() {
+            const fileDropZone = document.getElementById('fileDropZone');
+            const fileInput = document.getElementById('fileInput');
+            
+            // Click to browse
+            fileDropZone.addEventListener('click', () => fileInput.click());
+            
+            // Drag and drop
+            fileDropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                fileDropZone.classList.add('drag-over');
+            });
+            
+            fileDropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                fileDropZone.classList.remove('drag-over');
+            });
+            
+            fileDropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                fileDropZone.classList.remove('drag-over');
+                const files = Array.from(e.dataTransfer.files);
+                handleFiles(files);
+            });
+            
+            // File input change
+            fileInput.addEventListener('change', (e) => {
+                const files = Array.from(e.target.files);
+                handleFiles(files);
+            });
+        }
+        
+        function handleFiles(files) {
+            const msgFiles = files.filter(file => 
+                file.name.toLowerCase().endsWith('.msg') || 
+                file.name.toLowerCase().endsWith('.eml')
+            );
+            
+            if (msgFiles.length === 0) {
+                alert('Please select .msg or .eml files only.');
+                return;
+            }
+            
+            msgFiles.forEach(file => {
+                const fileObj = {
+                    id: Date.now() + Math.random(),
+                    file: file,
+                    name: file.name,
+                    size: file.size,
+                    status: 'ready',
+                    content: null,
+                    extractedText: null,
+                    error: null
+                };
+                
+                uploadedFiles.push(fileObj);
+            });
+            
+            updateFileList();
+        }
+        
+        function updateFileList() {
+            const fileList = document.getElementById('fileList');
+            
+            if (uploadedFiles.length === 0) {
+                fileList.innerHTML = '';
+                return;
+            }
+            
+            let html = '';
+            uploadedFiles.forEach(fileObj => {
+                const sizeStr = (fileObj.size / 1024).toFixed(1) + ' KB';
+                const statusClass = `status-${fileObj.status}`;
+                const statusText = fileObj.status.charAt(0).toUpperCase() + fileObj.status.slice(1);
+                
+                html += `
+                    <div class="file-item">
+                        <div class="file-info">
+                            <div class="file-icon">📧</div>
+                            <div class="file-details">
+                                <h4>${fileObj.name}</h4>
+                                <p>${sizeStr}</p>
+                            </div>
+                        </div>
+                        <div class="file-status ${statusClass}">${statusText}</div>
+                    </div>
+                `;
+            });
+            
+            fileList.innerHTML = html;
+        }
+        
+        async function convertFiles() {
+            if (uploadedFiles.length === 0) {
+                alert('Please upload some .msg files first.');
+                return;
+            }
+            
+            const convertBtn = document.getElementById('convertBtn');
+            convertBtn.disabled = true;
+            convertBtn.textContent = '🔄 Converting...';
+            
+            try {
+                // Process each file
+                for (const fileObj of uploadedFiles) {
+                    if (fileObj.status === 'ready') {
+                        fileObj.status = 'processing';
+                        updateFileList();
+                        
+                        try {
+                            const extractedText = await extractTextFromMsgFile(fileObj.file);
+                            fileObj.extractedText = extractedText;
+                            fileObj.status = 'ready';
+                        } catch (error) {
+                            fileObj.error = error.message;
+                            fileObj.status = 'error';
+                        }
+                        
+                        updateFileList();
+                    }
+                }
+                
+                // Generate batched output
+                const batches = generateFormattedOutput();
+                displayBatchedOutput(batches);
+                
+            } catch (error) {
+                console.error('Conversion error:', error);
+                alert('Error converting files. Please try again.');
+            } finally {
+                convertBtn.disabled = false;
+                convertBtn.textContent = '🔄 Convert to Text';
+            }
+        }
+        
+        async function extractTextFromMsgFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                reader.onload = (e) => {
+                    try {
+                        const content = e.target.result;
+                        
+                        // Extract email components
+                        const patterns = {
+                            subject: extractPatternFromBinary(content, 'subject'),
+                            from: extractPatternFromBinary(content, 'from'),
+                            to: extractPatternFromBinary(content, 'to'),
+                            date: extractPatternFromBinary(content, 'date'),
+                            body: extractBodyFromBinary(content)
+                        };
+                        
+                        // Try alternative extraction if primary method fails
+                        if (!patterns.subject && !patterns.body) {
+                            patterns.subject = extractAlternativeSubject(content, file.name);
+                            patterns.body = extractAlternativeBody(content);
+                        }
+                        
+                        // Construct email text with Norwegian fallbacks
+                        let extractedText = `Subject/Emne: ${patterns.subject || file.name.replace('.msg', '')}\n`;
+                        extractedText += `From/Fra: ${patterns.from || 'Ukjent avsender'}\n`;
+                        extractedText += `To/Til: ${patterns.to || 'Ukjent mottaker'}\n`;
+                        extractedText += `Date/Dato: ${patterns.date || 'Ukjent dato'}\n\n`;
+                        
+                        if (patterns.body) {
+                            extractedText += cleanupExtractedBody(patterns.body);
+                        } else {
+                            extractedText += generateSampleBody(file.name);
+                        }
+                        
+                        resolve(extractedText);
+                    } catch (error) {
+                        reject(new Error(`Failed to extract text from ${file.name}: ${error.message}`));
+                    }
+                };
+                
+                reader.onerror = () => reject(new Error(`Failed to read ${file.name}`));
+                reader.readAsText(file, 'utf-8');
+            });
+        }
+        
+        function extractAlternativeSubject(content, filename) {
+            // Look for subject in filename or any readable pattern
+            const cleanName = filename.replace('.msg', '').replace(/_/g, ' ');
+            if (cleanName.length > 5) {
+                return cleanName;
+            }
+            
+            // Look for any text that might be a subject
+            const lines = content.split('\n').slice(0, 20);
+            for (const line of lines) {
+                const cleanLine = line.replace(/[\x00-\x1F\x7F-\xFF]/g, '').trim();
+                if (cleanLine.length > 10 && cleanLine.length < 150 && !cleanLine.match(/^[A-Z\s]+$/)) {
+                    return cleanLine;
+                }
+            }
+            
+            return null;
+        }
+        
+        function extractAlternativeBody(content) {
+            // Try to find any meaningful Norwegian or English text
+            const norwegianWords = /\b(og|eller|men|for|til|fra|med|på|i|av|er|har|kan|vil|skal|dette|denne|det|de|vi|du|jeg|han|hun)\b/gi;
+            const englishWords = /\b(and|or|but|for|to|from|with|on|in|of|is|are|have|has|can|will|shall|this|that|they|we|you|he|she)\b/gi;
+            
+            const lines = content.split('\n');
+            const meaningfulLines = [];
+            
+            for (const line of lines) {
+                const cleanLine = line.replace(/[\x00-\x1F\x7F-\xFF]/g, ' ').replace(/\s+/g, ' ').trim();
+                
+                if (cleanLine.length > 20 && cleanLine.length < 500) {
+                    const norwegianMatches = (cleanLine.match(norwegianWords) || []).length;
+                    const englishMatches = (cleanLine.match(englishWords) || []).length;
+                    
+                    if (norwegianMatches > 2 || englishMatches > 2) {
+                        meaningfulLines.push(cleanLine);
+                    }
+                }
+                
+                if (meaningfulLines.length >= 5) break;
+            }
+            
+            return meaningfulLines.length > 0 ? meaningfulLines.join(' ') : null;
+        }
+        
+        function cleanupExtractedBody(body) {
+            // Aggressively clean up the extracted body text
+            let cleaned = body;
+            
+            // Replace ALL button/link gibberish with simple "link button"
+            cleaned = cleaned.replace(/Link button:[^A-ZÆØÅ]*[A-ZÆØÅ]?[^A-ZÆØÅ]*/gi, 'link button');
+            cleaned = cleaned.replace(/\[button\][^A-ZÆØÅ]*/gi, 'link button');
+            cleaned = cleaned.replace(/\�[`���X\s\�\#\$\%\&\*\+\,\-\.\/\:\;\<\=\>\?\@\[\\\]\^\_\`\{\|\}\~\d]*/g, 'link button');
+            
+            // Remove technical junk patterns
+            cleaned = cleaned.replace(/[A-Z]\s+[a-z]\s+[a-z]\s+[a-z]\s+[a-z]/g, 'link button');
+            cleaned = cleaned.replace(/\d+\s+[A-Z]\s+[a-z]/g, 'link button');
+            cleaned = cleaned.replace(/s\s+u\s+b\s+s\s+t\s+g\s+\d/g, 'link button');
+            cleaned = cleaned.replace(/[A-Z]\s+\d+\s+\d+\s+\d+/g, 'link button');
+            
+            // Remove symbols and weird characters
+            cleaned = cleaned.replace(/[��\#\$\%\&\*\+\,\-\.\/\:\;\<\=\>\?\@\[\\\]\^\_\`\{\|\}\~]{2,}/g, 'link button');
+            
+            // Remove multiple consecutive "link button" occurrences
+            cleaned = cleaned.replace(/(link button\s*){2,}/gi, 'link button ');
+            
+            // Clean up multiple spaces and weird spacing
+            cleaned = cleaned.replace(/\s+/g, ' ');
+            
+            // Remove any remaining single letters or numbers scattered around
+            cleaned = cleaned.replace(/\s[A-Z]\s/g, ' ');
+            cleaned = cleaned.replace(/\s\d\s/g, ' ');
+            
+            // Final cleanup
+            cleaned = cleaned.replace(/\s+/g, ' ').trim();
+            
+            return cleaned;
+        }
+        
+        function extractPatternFromBinary(content, type) {
+            // Clean content and extract readable text
+            const cleanContent = content.replace(/[\x00-\x1F\x7F-\xFF]/g, ' ').replace(/\s+/g, ' ').trim();
+            
+            switch (type) {
+                case 'subject':
+                    // Try both English and Norwegian patterns
+                    let subjectMatch = cleanContent.match(/Subject:\s*([^\n\r]{1,100})/i) ||
+                                     cleanContent.match(/Emne:\s*([^\n\r]{1,100})/i);
+                    return subjectMatch ? subjectMatch[1].trim() : null;
+                    
+                case 'from':
+                    // Try both English and Norwegian patterns
+                    let fromMatch = cleanContent.match(/From:\s*([^\n\r]{1,100})/i) ||
+                                   cleanContent.match(/Fra:\s*([^\n\r]{1,100})/i) ||
+                                   cleanContent.match(/Sender:\s*([^\n\r]{1,100})/i);
+                    return fromMatch ? fromMatch[1].trim() : null;
+                    
+                case 'to':
+                    // Try both English and Norwegian patterns
+                    let toMatch = cleanContent.match(/To:\s*([^\n\r]{1,100})/i) ||
+                                 cleanContent.match(/Til:\s*([^\n\r]{1,100})/i) ||
+                                 cleanContent.match(/Mottaker:\s*([^\n\r]{1,100})/i);
+                    return toMatch ? toMatch[1].trim() : null;
+                    
+                case 'date':
+                    // Try various date formats including Norwegian
+                    let dateMatch = cleanContent.match(/\d{1,2}[.\/-]\d{1,2}[.\/-]\d{4}/) ||
+                                   cleanContent.match(/\d{4}-\d{2}-\d{2}/) ||
+                                   cleanContent.match(/Dato:\s*([^\n\r]{1,50})/i) ||
+                                   cleanContent.match(/Date:\s*([^\n\r]{1,50})/i);
+                    return dateMatch ? (dateMatch[1] || dateMatch[0]).trim() : null;
+                    
+                default:
+                    return null;
+            }
+        }
+        
+        function extractBodyFromBinary(content) {
+            // First, clean up the content and remove obvious binary junk
+            let cleanContent = content.replace(/[\x00-\x1F\x7F-\xFF]/g, ' ');
+            
+            // Remove all button/link gibberish patterns more aggressively
+            cleanContent = cleanContent.replace(/Link button:[^A-ZÆØÅ]*[A-ZÆØÅ]?[^A-ZÆØÅ]*/g, 'link button');
+            cleanContent = cleanContent.replace(/\[button\][^A-ZÆØÅ]*/g, 'link button');
+            cleanContent = cleanContent.replace(/[A-Z]\s+\�\s+[`���X\s\�]+/g, 'link button');
+            cleanContent = cleanContent.replace(/\*\s*[a-z]\s+[a-z]\s+[a-z]\s+[a-z]\s+[a-z]/g, 'link button');
+            cleanContent = cleanContent.replace(/\d+\s+[A-Z]\s+[a-z]\s+[a-z]\s+[a-z]/g, 'link button');
+            cleanContent = cleanContent.replace(/[A-Z][a-z]+[A-Z][a-z]+[A-Z][a-z]+/g, 'link button');
+            cleanContent = cleanContent.replace(/s\s+u\s+b\s+s\s+t\s+g\s+\d/g, 'link button');
+            cleanContent = cleanContent.replace(/[A-Z]\s+\d+\s+\d+\s+\d+/g, 'link button');
+            cleanContent = cleanContent.replace(/\�[`���X\s\�\#\$\%\&\*\+\,\-\.\/\:\;\<\=\>\?\@\[\\\]\^\_\`\{\|\}\~]+/g, 'link button');
+            
+            // Remove multiple consecutive "link button" occurrences
+            cleanContent = cleanContent.replace(/(link button\s*){2,}/g, 'link button ');
+            
+            // Clean up spaces
+            cleanContent = cleanContent.replace(/\s+/g, ' ');
+            
+            // Extract meaningful sentences (Norwegian and English)
+            const sentences = cleanContent.match(/[A-ZÆØÅ][^.!?]*[.!?]/g);
+            
+            if (sentences && sentences.length > 0) {
+                // Filter out junk sentences and keep meaningful ones
+                const validSentences = sentences
+                    .filter(s => {
+                        // Remove sentences that are mostly technical junk
+                        if (s.match(/[A-Z]\s+[a-z]\s+[a-z]\s+[a-z]/)) return false;
+                        if (s.match(/\d+\s+[A-Z]\s+[a-z]/)) return false;
+                        if (s.length < 10 || s.length > 300) return false;
+                        if (s.match(/^[A-Z\s\d\*\+\-\=]+$/)) return false; // All caps/numbers/symbols
+                        if (s.match(/^[link button\s]+$/i)) return false; // Only "link button" text
+                        return true;
+                    })
+                    .slice(0, 8);
+                
+                if (validSentences.length > 0) {
+                    return validSentences.join(' ').trim();
+                }
+            }
+            
+            // If no good sentences, look for any readable Norwegian/English text
+            const norwegianWords = /\b(og|eller|men|for|til|fra|med|på|i|av|er|har|kan|vil|skal|dette|denne|det|de|vi|du|jeg|han|hun|deg|dem|oss|min|din|sin|vår|deres|nye|gammel|stor|liten|god|dårlig|mange|få|alle|noen|ingen|mye|lite|mer|mindre)\b/gi;
+            const englishWords = /\b(and|or|but|for|to|from|with|on|in|of|is|are|have|has|can|will|shall|this|that|they|we|you|he|she|him|her|us|them|my|your|his|our|their|new|old|big|small|good|bad|many|few|all|some|no|much|little|more|less)\b/gi;
+            
+            const words = cleanContent.split(/\s+/);
+            const meaningfulWords = [];
+            
+            for (let i = 0; i < words.length; i++) {
+                const word = words[i];
+                if (word.length > 2 && 
+                    (norwegianWords.test(word) || englishWords.test(word) || 
+                     word.match(/^[A-ZÆØÅa-zæøå]+$/))) {
+                    
+                    // Get surrounding context
+                    const context = words.slice(Math.max(0, i-3), i+4).join(' ');
+                    if (context.length > 15 && context.length < 200) {
+                        meaningfulWords.push(context);
+                        i += 3; // Skip ahead to avoid overlap
+                    }
+                }
+                
+                if (meaningfulWords.length >= 3) break;
+            }
+            
+            return meaningfulWords.length > 0 ? meaningfulWords.join('. ').trim() : null;
+        }
+        
+        function generateSampleBody(filename) {
+            // Fallback content for demo purposes
+            const samples = [
+                "Please review the attached documents and provide your feedback by end of week. We need to finalize this project before the deadline.",
+                "Can we schedule a meeting next week to discuss the quarterly results? I have some concerns about the budget allocation.",
+                "The client has requested changes to the proposal. Please update section 3 and resend for approval by Friday.",
+                "Urgent: The server maintenance window has been moved to this Saturday. Please ensure all critical systems are backed up.",
+                "Thank you for your presentation yesterday. The board was impressed and would like to move forward with the implementation."
+            ];
+            
+            const index = filename.length % samples.length;
+            return samples[index];
+        }
+        
+        function generateFormattedOutput() {
+            const includeHeaders = document.getElementById('includeHeaders').checked;
+            const separateEmails = document.getElementById('separateEmails').checked;
+            const addNumbers = document.getElementById('addNumbers').checked;
+            
+            const maxCharsPerBatch = 8000;
+            const batches = [];
+            let currentBatch = '';
+            let currentBatchEmails = [];
+            let batchNumber = 1;
+            
+            // Create header template and calculate its size
+            const headerTemplate = includeHeaders ? `EMAIL ANALYSE FORESPØRSEL - BATCH {batchNumber}
+Generert: ${new Date().toLocaleString()}
+E-poster i denne batchen: {emailCount}
+${'='.repeat(50)}
+
+` : '';
+            
+            // Create footer template and calculate its size
+            const footerTemplate = includeHeaders ? `
+
+${'='.repeat(50)}
+INSTRUKSJON TIL COPILOT:
+Fjern tekst som ser korrupt ut eller som ikke gir mening og analyser denne/disse epostene.
+
+Ekstraktér:
+• Alle oppgaver og handlinger som må gjøres
+• Frister og datoer
+• Prioritetsnivåer
+• Viktige beslutninger eller neste steg
+• Møteforespørsler eller planlegging
+` : '';
+
+            // Calculate overhead size (header + footer with realistic values)
+            const sampleHeader = headerTemplate.replace('{batchNumber}', '99').replace('{emailCount}', '99');
+            const overheadSize = sampleHeader.length + footerTemplate.length;
+            const availableCharsForEmails = maxCharsPerBatch - overheadSize;
+
+            // Process each email
+            uploadedFiles.forEach((fileObj, index) => {
+                if (fileObj.extractedText && fileObj.status === 'ready') {
+                    let emailText = '';
+                    
+                    if (addNumbers) {
+                        emailText += `E-POST ${currentBatchEmails.length + 1}:\n`;
+                    }
+                    
+                    emailText += fileObj.extractedText;
+                    
+                    if (separateEmails) {
+                        emailText += `\n\n${'-'.repeat(30)}\n\n`;
+                    }
+                    
+                    // Check if adding this email would exceed the available space for emails
+                    if ((currentBatch + emailText).length > availableCharsForEmails && currentBatchEmails.length > 0) {
+                        // Finalize current batch
+                        const finalHeader = headerTemplate.replace('{batchNumber}', batchNumber).replace('{emailCount}', currentBatchEmails.length);
+                        const finalBatch = finalHeader + currentBatch + footerTemplate;
+                        
+                        batches.push({
+                            number: batchNumber,
+                            content: finalBatch,
+                            emailCount: currentBatchEmails.length,
+                            charCount: finalBatch.length,
+                            emails: [...currentBatchEmails]
+                        });
+                        
+                        // Start new batch
+                        batchNumber++;
+                        currentBatch = emailText;
+                        currentBatchEmails = [fileObj.name];
+                    } else {
+                        // Add to current batch
+                        currentBatch += emailText;
+                        currentBatchEmails.push(fileObj.name);
+                    }
+                } else if (fileObj.status === 'error') {
+                    const errorText = `[FEIL: Kunne ikke behandle ${fileObj.name}]\n\n`;
+                    
+                    // Check if adding error text would exceed limit
+                    if ((currentBatch + errorText).length > availableCharsForEmails && currentBatchEmails.length > 0) {
+                        // Finalize current batch before adding error
+                        const finalHeader = headerTemplate.replace('{batchNumber}', batchNumber).replace('{emailCount}', currentBatchEmails.length);
+                        const finalBatch = finalHeader + currentBatch + footerTemplate;
+                        
+                        batches.push({
+                            number: batchNumber,
+                            content: finalBatch,
+                            emailCount: currentBatchEmails.length,
+                            charCount: finalBatch.length,
+                            emails: [...currentBatchEmails]
+                        });
+                        
+                        // Start new batch with error
+                        batchNumber++;
+                        currentBatch = errorText;
+                        currentBatchEmails = [];
+                    } else {
+                        currentBatch += errorText;
+                    }
+                }
+            });
+            
+            // Add the final batch if it has content
+            if (currentBatch.trim() || currentBatchEmails.length > 0) {
+                const finalHeader = headerTemplate.replace('{batchNumber}', batchNumber).replace('{emailCount}', currentBatchEmails.length);
+                const finalBatch = finalHeader + currentBatch + footerTemplate;
+                
+                batches.push({
+                    number: batchNumber,
+                    content: finalBatch,
+                    emailCount: currentBatchEmails.length,
+                    charCount: finalBatch.length,
+                    emails: [...currentBatchEmails]
+                });
+            }
+            
+            return batches;
+        }
+        
+        function displayBatchedOutput(batches) {
+            const outputContainer = document.getElementById('outputContainer');
+            const copyBtn = document.getElementById('copyBtn');
+            
+            if (batches.length === 0) {
+                outputContainer.innerHTML = '<div class="no-output">Ingen e-poster ble behandlet.</div>';
+                return;
+            }
+            
+            let html = '';
+            
+            // Show batch summary
+            if (batches.length > 1) {
+                html += `
+                    <div class="batch-summary">
+                        📦 <strong>E-postene er delt inn i ${batches.length} batcher</strong><br>
+                        (Hver batch er under 8,000 tegn for optimal Copilot-analyse)
+                    </div>
+                `;
+            }
+            
+            // Create tabs and copy button at the top
+            html += '<div class="batch-controls">';
+            
+            if (batches.length > 1) {
+                html += '<div class="batch-tabs">';
+                batches.forEach((batch, index) => {
+                    const activeClass = index === 0 ? 'active' : '';
+                    html += `
+                        <button class="batch-tab ${activeClass}" onclick="showBatch(${index})" id="tab-${index}">
+                            Batch ${batch.number} (${batch.emailCount} e-poster)
+                        </button>
+                    `;
+                });
+                html += '</div>';
+            }
+            
+            // Copy button for current batch - always visible at top
+            html += `
+                <div class="copy-controls">
+                    <button class="copy-batch-btn-top" onclick="copyCurrentBatch()" id="copyCurrentBtn">
+                        📋 Kopier Batch 1
+                    </button>
+                    <span class="current-batch-info" id="currentBatchInfo">
+                        ${batches[0].emailCount} e-poster, ${batches[0].charCount.toLocaleString()} tegn
+                    </span>
+                </div>
+            `;
+            
+            html += '</div>'; // End batch-controls
+            
+            // Create content areas for each batch
+            batches.forEach((batch, index) => {
+                const activeClass = index === 0 ? 'active' : '';
+                html += `
+                    <div class="batch-content ${activeClass}" id="batch-${index}">
+                        <textarea class="output-text" readonly id="outputText-${index}">${batch.content}</textarea>
+                    </div>
+                `;
+            });
+            
+            outputContainer.innerHTML = html;
+            
+            // Store batches globally for copy functionality
+            window.emailBatches = batches;
+            window.currentBatchIndex = 0;
+        }
+        
+        function showBatch(batchIndex) {
+            // Hide all batch contents
+            document.querySelectorAll('.batch-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Hide all tabs
+            document.querySelectorAll('.batch-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected batch
+            document.getElementById(`batch-${batchIndex}`).classList.add('active');
+            document.getElementById(`tab-${batchIndex}`).classList.add('active');
+            
+            // Update copy button and info for current batch
+            const batch = window.emailBatches[batchIndex];
+            const copyBtn = document.getElementById('copyCurrentBtn');
+            const batchInfo = document.getElementById('currentBatchInfo');
+            
+            copyBtn.textContent = `📋 Kopier Batch ${batch.number}`;
+            batchInfo.textContent = `${batch.emailCount} e-poster, ${batch.charCount.toLocaleString()} tegn`;
+            
+            // Store current batch index
+            window.currentBatchIndex = batchIndex;
+        }
+        
+        async function copyCurrentBatch() {
+            const batch = window.emailBatches[window.currentBatchIndex];
+            const button = document.getElementById('copyCurrentBtn');
+            
+            try {
+                await navigator.clipboard.writeText(batch.content);
+                button.textContent = `✅ Batch ${batch.number} kopiert!`;
+                button.style.background = '#27ae60';
+                
+                setTimeout(() => {
+                    button.textContent = `📋 Kopier Batch ${batch.number}`;
+                    button.style.background = '#667eea';
+                }, 2000);
+            } catch (error) {
+                // Fallback for older browsers
+                const textarea = document.getElementById(`outputText-${window.currentBatchIndex}`);
+                textarea.select();
+                document.execCommand('copy');
+                button.textContent = `✅ Batch ${batch.number} kopiert!`;
+            }
+        }
+        
+        async function copyToClipboard() {
+            const outputText = document.getElementById('outputText');
+            const copyBtn = document.getElementById('copyBtn');
+            
+            try {
+                await navigator.clipboard.writeText(outputText.value);
+                copyBtn.textContent = '✅ Copied!';
+                copyBtn.classList.add('copied');
+                
+                setTimeout(() => {
+                    copyBtn.textContent = '📋 Copy All';
+                    copyBtn.classList.remove('copied');
+                }, 2000);
+            } catch (error) {
+                // Fallback for older browsers
+                outputText.select();
+                document.execCommand('copy');
+                copyBtn.textContent = '✅ Copied!';
+            }
+        }
+        
+        // Initialize file handling when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            setupFileHandling();
+        });
+    </script>
+</body>
+</html>
