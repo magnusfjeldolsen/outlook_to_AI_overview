@@ -833,27 +833,36 @@ Create:
                 reader.onload = (e) => {
                     try {
                         const content = e.target.result;
+                        const isEmlFile = file.name.toLowerCase().endsWith('.eml');
                         
-                        const patterns = {
-                            subject: extractPatternFromBinary(content, 'subject'),
-                            from: extractPatternFromBinary(content, 'from'),
-                            to: extractPatternFromBinary(content, 'to'),
-                            date: extractPatternFromBinary(content, 'date'),
-                            body: extractBodyFromBinary(content)
-                        };
-                        
-                        if (!patterns.subject && !patterns.body) {
-                            patterns.subject = extractAlternativeSubject(content, file.name);
-                            patterns.body = extractAlternativeBody(content);
+                        let patterns;
+                        if (isEmlFile) {
+                            // Handle .eml files with RFC 2822 format
+                            patterns = extractFromEmlContent(content);
+                        } else {
+                            // Handle .msg files (binary format)
+                            patterns = {
+                                subject: extractPatternFromBinary(content, 'subject'),
+                                from: extractPatternFromBinary(content, 'from'),
+                                to: extractPatternFromBinary(content, 'to'),
+                                date: extractPatternFromBinary(content, 'date'),
+                                body: extractBodyFromBinary(content)
+                            };
+                            
+                            if (!patterns.subject && !patterns.body) {
+                                patterns.subject = extractAlternativeSubject(content, file.name);
+                                patterns.body = extractAlternativeBody(content);
+                            }
                         }
                         
-                        let extractedText = `Subject/Emne: ${patterns.subject || file.name.replace('.msg', '')}\n`;
+                        const fileExtension = isEmlFile ? '.eml' : '.msg';
+                        let extractedText = `Subject/Emne: ${patterns.subject || file.name.replace(fileExtension, '')}\n`;
                         extractedText += `From/Fra: ${patterns.from || 'Ukjent avsender'}\n`;
                         extractedText += `To/Til: ${patterns.to || 'Ukjent mottaker'}\n`;
                         extractedText += `Date/Dato: ${patterns.date || 'Ukjent dato'}\n\n`;
                         
                         if (patterns.body) {
-                            extractedText += cleanupExtractedBody(patterns.body);
+                            extractedText += isEmlFile ? patterns.body : cleanupExtractedBody(patterns.body);
                         } else {
                             extractedText += generateSampleBody(file.name);
                         }
@@ -867,6 +876,85 @@ Create:
                 reader.onerror = () => reject(new Error(`Failed to read ${file.name}`));
                 reader.readAsText(file, 'utf-8');
             });
+        }
+        
+        function extractFromEmlContent(content) {
+            // Parse .eml file (RFC 2822 format)
+            const lines = content.split('\n');
+            const patterns = {
+                subject: null,
+                from: null,
+                to: null,
+                date: null,
+                body: null
+            };
+            
+            let bodyStartIndex = -1;
+            let inHeaders = true;
+            
+            // Parse headers
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                
+                if (inHeaders) {
+                    // Empty line indicates end of headers
+                    if (line.trim() === '') {
+                        inHeaders = false;
+                        bodyStartIndex = i + 1;
+                        continue;
+                    }
+                    
+                    // Parse header fields
+                    if (line.match(/^Subject:/i)) {
+                        patterns.subject = line.replace(/^Subject:\s*/i, '').trim();
+                    } else if (line.match(/^From:/i)) {
+                        patterns.from = line.replace(/^From:\s*/i, '').trim();
+                        // Clean up email format: "Name <email@domain.com>" or just "email@domain.com"
+                        patterns.from = patterns.from.replace(/.*<(.+)>.*/, '$1').replace(/[<>]/g, '');
+                    } else if (line.match(/^To:/i)) {
+                        patterns.to = line.replace(/^To:\s*/i, '').trim();
+                        patterns.to = patterns.to.replace(/.*<(.+)>.*/, '$1').replace(/[<>]/g, '');
+                    } else if (line.match(/^Date:/i)) {
+                        patterns.date = line.replace(/^Date:\s*/i, '').trim();
+                        // Try to format date nicely
+                        try {
+                            const dateObj = new Date(patterns.date);
+                            if (!isNaN(dateObj.getTime())) {
+                                patterns.date = dateObj.toLocaleString();
+                            }
+                        } catch (e) {
+                            // Keep original if parsing fails
+                        }
+                    }
+                }
+            }
+            
+            // Extract body
+            if (bodyStartIndex >= 0 && bodyStartIndex < lines.length) {
+                let bodyLines = lines.slice(bodyStartIndex);
+                
+                // Remove common email signatures and footers
+                for (let i = 0; i < bodyLines.length; i++) {
+                    const line = bodyLines[i];
+                    if (line.match(/^--\s*$/) || line.match(/^_+$/) || 
+                        line.match(/^-+\s*Original Message\s*-+/i) ||
+                        line.match(/^From:.*Sent:.*To:.*Subject:/i)) {
+                        bodyLines = bodyLines.slice(0, i);
+                        break;
+                    }
+                }
+                
+                patterns.body = bodyLines.join('\n').trim();
+                
+                // Clean up common email artifacts
+                patterns.body = patterns.body
+                    .replace(/\r\n/g, '\n')
+                    .replace(/\n{3,}/g, '\n\n')
+                    .replace(/^>+\s*/gm, '') // Remove quote markers
+                    .trim();
+            }
+            
+            return patterns;
         }
         
         function extractPatternFromBinary(content, type) {
